@@ -1,32 +1,25 @@
-import express from "express";
-
+import express from 'express';
 import {
+  getSiteStats,
   getAllUsers,
-  toggleBlockUser,
-  getAllCourses,
-  deleteCourse,
-  createCourseAsAdmin,
-  getAllInstructors,
-  getCourseByIdAsAdmin,
-  toggleApproveCourse,
-} from "../controllers/adminController.js";
-
-import { protect } from "../middlewares/authMiddleware.js";
-import { allowRoles } from "../middlewares/roleMiddleware.js";
+} from '../controllers/admin.controller.js';
+import { isAuthenticated } from '../middlewares/auth.middleware.js'; // Correct import path
 
 const router = express.Router();
 
-router.use(protect);
-router.use(allowRoles("admin"));
+// Middleware to check for admin role
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+  }
+};
 
-router.get("/users", getAllUsers);
-router.patch("/users/:id/block", toggleBlockUser);
+// All admin routes should be protected and require admin role
+router.use(isAuthenticated, isAdmin);
 
-router.get("/instructors", getAllInstructors);
-router.get("/courses", getAllCourses);
-router.post("/courses", createCourseAsAdmin);
-router.get("/courses/:id", getCourseByIdAsAdmin);
-router.patch("/courses/:id/approve", toggleApproveCourse);
-router.delete("/courses/:id", deleteCourse);
+router.get('/stats', getSiteStats);
+router.get('/users', getAllUsers);
 
 export default router;

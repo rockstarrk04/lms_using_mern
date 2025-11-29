@@ -2,11 +2,21 @@ import mongoose from "mongoose";
 
 const lessonSchema = new mongoose.Schema(
   {
-    course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
-    title: { type: String, required: true },
-    content: { type: String },
+    title: {
+      type: String,
+      trim: true,
+      required: [true, 'Lesson title is required'],
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
     videoUrl: { type: String },
-    order: { type: Number, default: 0 },
+    module: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Module',
+      required: true,
+    },
   },
   { timestamps: true }
 );

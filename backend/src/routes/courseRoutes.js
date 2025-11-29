@@ -1,102 +1,28 @@
-// backend/src/routes/courseRoutes.js
-
-import express from "express";
-
-// --- Controllers ---
+import express from 'express';
 import {
-  getCourses,
+  getAllCourses,
   getCourseById,
+  getMyCreatedCourses,
   createCourse,
-  getMyCourses,
-  deleteCourse,
   updateCourse,
-} from "../controllers/courseController.js";
-
-import {
-  getLessonsForCourse,
-  createLessonForCourse,
-} from "../controllers/lessonController.js";
-
-// --- Middleware ---
-import { protect } from "../middlewares/authMiddleware.js";
-import { allowRoles } from "../middlewares/roleMiddleware.js";
+  getCourseForEnrolledUser,
+  getRazorpayKey,
+} from '../controllers/course.controller.js';
+import { isAuthenticated } from '../middlewares/auth.middleware.js'; // Correct import path
 
 const router = express.Router();
 
-// ---------------------------------------------------------
-// 📚 PUBLIC ROUTES
-// ---------------------------------------------------------
+// --- Public Routes ---
+router.get('/', getAllCourses);
+router.get('/:courseId', getCourseById);
 
-// Get all published courses
-router.get("/", getCourses);
+// --- Protected Routes ---
+router.get('/my-creations', isAuthenticated, getMyCreatedCourses);
+router.post('/', isAuthenticated, createCourse);
+router.put('/:courseId', isAuthenticated, updateCourse);
+router.get('/learn/:courseId', isAuthenticated, getCourseForEnrolledUser);
 
-// ⚠️ Important: Define static routes BEFORE dynamic routes (/:id)
-router.get("/mine", protect, allowRoles("instructor", "admin"), getMyCourses);
-
-// ---------------------------------------------------------
-// 📚 PUBLIC LESSON ROUTES
-// ---------------------------------------------------------
-
-// Get all lessons for a specific course
-router.get("/:courseId/lessons", getLessonsForCourse);
-
-// ---------------------------------------------------------
-// 📚 PUBLIC SINGLE COURSE
-// ---------------------------------------------------------
-
-// Get a specific course by ID
-router.get("/:id", getCourseById);
-
-// ---------------------------------------------------------
-// 🔐 PROTECTED ROUTES
-// ---------------------------------------------------------
-
-// Student enrolls in a course
-// router.post(
-//   "/:courseId/enroll",
-//   protect,
-//   allowRoles("student"),
-//   enrollInCourse
-// );
-
-// ---------------------------------------------------------
-// 💼 INSTRUCTOR / ADMIN ROUTES
-// ---------------------------------------------------------
-
-// Create new course
-router.post(
-  "/",
-  protect,
-  allowRoles("instructor", "admin"),
-  createCourse
-);
-
-// Create lesson for a course
-router.post(
-  "/:courseId/lessons",
-  protect,
-  allowRoles("instructor", "admin"),
-  createLessonForCourse
-);
-
-// Update a course
-router.put(
-  "/:id",
-  protect,
-  allowRoles("instructor", "admin"),
-  updateCourse
-);
-
-// ---------------------------------------------------------
-// 👑 ADMIN ONLY
-// ---------------------------------------------------------
-
-// Delete a course
-router.delete(
-  "/:id",
-  protect,
-  allowRoles("instructor", "admin"),
-  deleteCourse
-);
+// This could be a protected route as well, depending on your logic
+router.get('/get-razorpay-key', getRazorpayKey);
 
 export default router;

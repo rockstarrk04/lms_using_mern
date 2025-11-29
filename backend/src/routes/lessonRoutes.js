@@ -1,25 +1,16 @@
-// backend/src/routes/lessonRoutes.js
+import express from 'express';
+import {
+  updateLesson,
+  deleteLesson,
+} from '../controllers/curriculum.controller.js';
+import { isAuthenticated } from '../middlewares/auth.middleware.js'; // Correct import path
 
-import express from "express";
 const router = express.Router();
 
-// Controllers
-import { getLessonById } from "../controllers/lessonController.js";
+// All lesson routes should be protected
+router.use(isAuthenticated);
 
-// Middleware
-import { protect } from "../middlewares/authMiddleware.js";
-// const { allowRoles } = require("../middlewares/roleMiddleware"); // optional
-
-// -----------------------------------------------------------
-// LESSON ROUTES
-// -----------------------------------------------------------
-
-// GET /api/lessons/:id
-// Fetch a single lesson by ID
-router.get("/:id", protect, getLessonById);
-
-// ✔ If you decide later that only enrolled students can view lessons,
-// you can replace with:
-// router.get("/:id", protect, allowRoles("student", "instructor", "admin"), getLessonById);
+router.put('/:lessonId', updateLesson);
+router.delete('/:lessonId', deleteLesson);
 
 export default router;

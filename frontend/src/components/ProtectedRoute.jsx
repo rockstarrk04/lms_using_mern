@@ -1,14 +1,18 @@
-// src/components/ProtectedRoute.jsx
-import { Navigate } from "react-router-dom";
-import { useContext } from "react";
+import React, { useContext } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
-export default function ProtectedRoute({ children }) {
-  const { user } = useContext(AuthContext);
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useContext(AuthContext);
+  const location = useLocation();
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    // Redirect them to the /login page, but save the current location they were
+    // trying to go to. This allows us to send them back to that page after they log in.
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return children;
 }
+
+export default ProtectedRoute;

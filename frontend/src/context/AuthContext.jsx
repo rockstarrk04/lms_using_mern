@@ -1,68 +1,55 @@
-// src/context/AuthContext.jsx
-import { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect } from "react";
 
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  // ------------------------------
-  // Load saved user from localStorage
-  // ------------------------------
-  const [user, setUser] = useState(() => {
-    try {
-      const savedUser = localStorage.getItem("user");
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch {
-      return null;
-    }
-  });
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true); // Add loading state
 
-  // ------------------------------
-  // Load saved token
-  // ------------------------------
-  const [token, setToken] = useState(() => {
-    return localStorage.getItem("token") || null;
-  });
-
-  // -------------------------------------
-  // Automatically attach token to fetch/axios
-  // -------------------------------------
   useEffect(() => {
-    if (token) {
-      // If using axios, remove comment below:
-      // axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    // On initial load, try to load the token and user from localStorage
+    try {
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-      // If using fetch globally, add like:
-      window.authToken = token;
-    } else {
-      // axios.defaults.headers.common["Authorization"] = null;
-      window.authToken = null;
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+        setIsAuthenticated(true);
+      }
+    } finally {
+      setLoading(false); // Set loading to false after checking
     }
-  }, [token]);
+  }, []);
 
-  // ------------------------------
-  // Login function
-  // ------------------------------
-  const login = (userData, tokenValue) => {
-    setUser(userData);
-    setToken(tokenValue);
-
+  const login = (userData, userToken) => {
     localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", tokenValue);
+    localStorage.setItem("token", userToken);
+    setUser(userData);
+    setToken(userToken);
+    setIsAuthenticated(true);
   };
 
-  // ------------------------------
-  // Logout function
-  // ------------------------------
   const logout = () => {
-    setUser(null);
-    setToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    setUser(null);
+    setToken(null);
+    setIsAuthenticated(false);
+  };
+
+  const authContextValue = {
+    user,
+    token,
+    isAuthenticated,
+    loading,
+    login,
+    logout,
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>
   );
-}
+};
