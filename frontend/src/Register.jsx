@@ -19,18 +19,23 @@ function Register() {
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
-      [name]: value,
+      [e.target.name]: e.target.value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
+    // Basic front‑end validation
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
@@ -45,12 +50,12 @@ function Register() {
       if (!res.ok) {
         setError(data.message || "Registration failed");
       } else {
-        // auto-login on success
+        // Auto-login on success
         login(data.user, data.token);
         navigate("/dashboard");
       }
     } catch (err) {
-      setError("Something went wrong");
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

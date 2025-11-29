@@ -1,9 +1,9 @@
 // backend/src/controllers/enrollmentController.js
-const Enrollment = require("../models/Enrollment");
-const Course = require("../models/Course");
+import Enrollment from "../models/Enrollment.js";
+import Course from "../models/Course.js";
 
 // POST /api/courses/:courseId/enroll  (student)
-const enrollInCourse = async (req, res) => {
+export const enrollInCourse = async (req, res) => {
   try {
     const { courseId } = req.params;
 
@@ -39,7 +39,7 @@ const enrollInCourse = async (req, res) => {
 };
 
 // GET /api/enrollments/me  (student)
-const getMyEnrollments = async (req, res) => {
+export const getMyEnrollments = async (req, res) => {
   try {
     const enrollments = await Enrollment.find({
       student: req.user._id,
@@ -55,7 +55,7 @@ const getMyEnrollments = async (req, res) => {
 };
 
 // GET /api/enrollments/:id (student)
-const getEnrollmentById = async (req, res) => {
+export const getEnrollmentById = async (req, res) => {
   try {
     const enrollment = await Enrollment.findOne({
       _id: req.params.id,
@@ -69,10 +69,4 @@ const getEnrollmentById = async (req, res) => {
     console.error("getEnrollmentById error:", error);
     return res.status(500).json({ message: "Server error" });
   }
-};
-
-module.exports = {
-  enrollInCourse,
-  getMyEnrollments,
-  getEnrollmentById,
 };

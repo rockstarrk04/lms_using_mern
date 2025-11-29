@@ -41,13 +41,13 @@ function Login() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Login failed");
+        setError(data.message || "Invalid email or password");
       } else {
         login(data.user, data.token);
         navigate("/dashboard");
       }
     } catch (err) {
-      setError("Something went wrong");
+      setError("Unable to connect to server. Try again later.");
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ function Login() {
         </form>
 
         <p className="mt-3 text-xs text-slate-400">
-          Don&apos;t have an account?{" "}
+          Don't have an account?{" "}
           <Link to="/register" className="text-blue-400 hover:underline">
             Register
           </Link>

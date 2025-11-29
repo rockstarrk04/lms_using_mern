@@ -1,10 +1,10 @@
 // backend/src/controllers/authController.js
-const User = require("../models/User");
-const generateToken = require("../utils/generateToken"); // 👈 add this
-const bcrypt = require("bcrypt"); // 👈 add this
+import User from "../models/User.js";
+import generateToken from "../utils/generateToken.js";
+import bcrypt from "bcrypt";
 
 // REGISTER
-const register = async (req, res) => {
+export const register = async (req, res) => {
   try {
     console.log("BODY (register):", req.body);
 
@@ -51,7 +51,7 @@ const register = async (req, res) => {
 };
 
 // LOGIN
-const login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     console.log("BODY (login):", req.body);
 
@@ -72,10 +72,10 @@ const login = async (req, res) => {
       return res.status(403).json({ message: "Account is blocked" });
     }
 
-    // 👇 compare raw password to hashed one
-    const isMatch = await user.checkPassword(password);
+    // Compare raw password to hashed one
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const token = generateToken(user);
@@ -100,12 +100,6 @@ const login = async (req, res) => {
 };
 
 // GET CURRENT USER
-const getMe = (req, res) => {
+export const getMe = (req, res) => {
   return res.json({ user: req.user });
-};
-
-module.exports = {
-  register,
-  login,
-  getMe,
 };

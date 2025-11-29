@@ -1,35 +1,31 @@
 // backend/src/app.js
+import express from "express";
+import cors from "cors";
+import morgan from "morgan";
+import helmet from "helmet";
 
-const express = require("express");
-const cors = require("cors");
-const morgan = require("morgan");
-
-const authRoutes = require("./routes/authRoutes");
-const courseRoutes = require("./routes/courseRoutes");
-const enrollmentRoutes = require("./routes/enrollmentRoutes");
-const adminRoutes = require("./routes/adminRoutes");
-const lessonRoutes = require("./routes/lessonRoutes");
-
-
+import authRoutes from "./routes/authRoutes.js";
+import courseRoutes from "./routes/courseRoutes.js";
+import enrollmentRoutes from "./routes/enrollmentRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import lessonRoutes from "./routes/lessonRoutes.js";
 
 const app = express();
 
-// Middlewares
+app.use(helmet()); // Set security HTTP headers
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
-// Routes
 app.get("/", (req, res) => {
   res.json({ message: "LMS API is running 🚀" });
 });
 
-
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
-app.use("/api/enrollments", enrollmentRoutes); // Corrected import for enrollmentRoutes
-app.use("/api/admin", adminRoutes); // Corrected import for adminRoutes
-app.use("/api/lessons", lessonRoutes); // Corrected import for lessonRoutes
+app.use("/api/enrollments", enrollmentRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/lessons", lessonRoutes);
 
-module.exports = app;
+export default app;

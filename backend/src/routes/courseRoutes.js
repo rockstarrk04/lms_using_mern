@@ -1,45 +1,57 @@
 // backend/src/routes/courseRoutes.js
 
-const express = require("express");
+import express from "express";
 
 // --- Controllers ---
-const {
+import {
   getCourses,
   getCourseById,
   createCourse,
   getMyCourses,
   deleteCourse,
   updateCourse,
-} = require("../controllers/courseController");
-const {
+} from "../controllers/courseController.js";
+
+import {
   getLessonsForCourse,
   createLessonForCourse,
-} = require("../controllers/lessonController");
+} from "../controllers/lessonController.js";
 
 // --- Middleware ---
-const { protect } = require("../middlewares/authMiddleware"); // Standard auth check
-const { allowRoles } = require("../middlewares/roleMiddleware"); // Role-based checks
+import { protect } from "../middlewares/authMiddleware.js";
+import { allowRoles } from "../middlewares/roleMiddleware.js";
 
 const router = express.Router();
-// -----------------------------------------------------------------
-// -----------------------------------------------------------------
-// 📚 PUBLIC ROUTES
-// -----------------------------------------------------------------
 
-// GET /api/courses - Get all published courses
+// ---------------------------------------------------------
+// 📚 PUBLIC ROUTES
+// ---------------------------------------------------------
+
+// Get all published courses
 router.get("/", getCourses);
 
-// GET /api/courses/:id - Get a specific course by ID
-router.get("/:id", getCourseById);
+// ⚠️ Important: Define static routes BEFORE dynamic routes (/:id)
+router.get("/mine", protect, allowRoles("instructor", "admin"), getMyCourses);
 
-// GET /api/courses/:courseId/lessons - Get all lessons for a specific course
+// ---------------------------------------------------------
+// 📚 PUBLIC LESSON ROUTES
+// ---------------------------------------------------------
+
+// Get all lessons for a specific course
 router.get("/:courseId/lessons", getLessonsForCourse);
 
-// -----------------------------------------------------------------
-// 🔑 PROTECTED ROUTES
-// -----------------------------------------------------------------
+// ---------------------------------------------------------
+// 📚 PUBLIC SINGLE COURSE
+// ---------------------------------------------------------
 
-// POST /api/courses/:courseId/enroll - Student enrolls in a course
+// Get a specific course by ID
+router.get("/:id", getCourseById);
+
+// ---------------------------------------------------------
+// 🔐 PROTECTED ROUTES
+// ---------------------------------------------------------
+
+// Student enrolls in a course
 // router.post(
 //   "/:courseId/enroll",
 //   protect,
@@ -47,27 +59,19 @@ router.get("/:courseId/lessons", getLessonsForCourse);
 //   enrollInCourse
 // );
 
-// -----------------------------------------------------------------
-// 💼 INSTRUCTOR/ADMIN ROUTES
-// -----------------------------------------------------------------
+// ---------------------------------------------------------
+// 💼 INSTRUCTOR / ADMIN ROUTES
+// ---------------------------------------------------------
 
-// GET /api/courses/mine - Get courses created by the current instructor/admin
-router.get(
-  "/mine",
-  protect,
-  allowRoles("instructor", "admin"),
-  getMyCourses
-);
-
-// POST /api/courses - Create a new course
+// Create new course
 router.post(
   "/",
-  protect, // Protect the route
-  allowRoles("instructor", "admin"), // Only instructors and admins can create courses
+  protect,
+  allowRoles("instructor", "admin"),
   createCourse
 );
 
-// POST /api/courses/:courseId/lessons - Create a new lesson for a course
+// Create lesson for a course
 router.post(
   "/:courseId/lessons",
   protect,
@@ -75,20 +79,7 @@ router.post(
   createLessonForCourse
 );
 
-// -----------------------------------------------------------------
-// 👑 ADMIN ONLY ROUTES (More restrictive)
-// -----------------------------------------------------------------
-
-// DELETE /api/courses/:id - Delete a course
-// Using allowRoles("admin") for stricter control over deletion
-router.delete(
-  "/:id",
-  protect,
-  allowRoles("admin"),
-  deleteCourse
-);
-
-// PUT /api/courses/:id - Update a course
+// Update a course
 router.put(
   "/:id",
   protect,
@@ -96,4 +87,16 @@ router.put(
   updateCourse
 );
 
-module.exports = router;
+// ---------------------------------------------------------
+// 👑 ADMIN ONLY
+// ---------------------------------------------------------
+
+// Delete a course
+router.delete(
+  "/:id",
+  protect,
+  allowRoles("instructor", "admin"),
+  deleteCourse
+);
+
+export default router;

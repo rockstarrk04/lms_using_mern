@@ -1,43 +1,32 @@
-// backend/src/routes/adminRoutes.js
+import express from "express";
 
-const express = require("express");
-
-// --- Controllers ---
-const {
+import {
   getAllUsers,
   toggleBlockUser,
   getAllCourses,
   deleteCourse,
-} = require("../controllers/adminController");
+  createCourseAsAdmin,
+  getAllInstructors,
+  getCourseByIdAsAdmin,
+  toggleApproveCourse,
+} from "../controllers/adminController.js";
 
-// --- Middleware ---
-const { protect } = require("../middlewares/authMiddleware"); // Standard authentication check
-const { allowRoles } = require("../middlewares/roleMiddleware"); // Role-based checks
+import { protect } from "../middlewares/authMiddleware.js";
+import { allowRoles } from "../middlewares/roleMiddleware.js";
 
 const router = express.Router();
 
-// -----------------------------------------------------------------
-// 👑 ADMIN-ONLY ROUTES
-// 
-// Apply 'protect' and 'allowRoles("admin")' middleware to all
-// subsequent routes defined on this router instance.
-// -----------------------------------------------------------------
+router.use(protect);
+router.use(allowRoles("admin"));
 
-// Middleware applied to ALL routes defined below in this file
-router.use(protect, allowRoles("admin")); // Apply to all routes in this file
-
-// --- User Management ---
-// GET /api/admin/users - Get all users
 router.get("/users", getAllUsers);
-
-// PATCH /api/admin/users/:id/block - Block or unblock a specific user
 router.patch("/users/:id/block", toggleBlockUser);
 
-// --- Course Management ---
-// GET /api/admin/courses - Get all courses (including unpublished ones)
+router.get("/instructors", getAllInstructors);
 router.get("/courses", getAllCourses);
-
-// DELETE /api/admin/courses/:id - Delete a specific course
+router.post("/courses", createCourseAsAdmin);
+router.get("/courses/:id", getCourseByIdAsAdmin);
+router.patch("/courses/:id/approve", toggleApproveCourse);
 router.delete("/courses/:id", deleteCourse);
 
-module.exports = router;
+export default router;

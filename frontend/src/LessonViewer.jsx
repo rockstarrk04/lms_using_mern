@@ -35,7 +35,7 @@ function LessonViewer() {
           setLesson(data.lesson);
         }
       } catch (err) {
-        setError("Something went wrong");
+        setError("Something went wrong while loading the lesson.");
       } finally {
         setLoading(false);
       }
@@ -43,6 +43,8 @@ function LessonViewer() {
 
     loadLesson();
   }, [lessonId, token, user, navigate]);
+
+  // ---------- UI STATES ----------
 
   if (loading) {
     return (
@@ -66,11 +68,22 @@ function LessonViewer() {
     );
   }
 
+  // ---------- MAIN UI ----------
+
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate(`/courses/${courseId}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <div className="max-w-4xl mx-auto py-8 px-4 space-y-4">
+
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="text-xs text-slate-400 hover:text-white"
         >
           ← Back
@@ -78,17 +91,17 @@ function LessonViewer() {
 
         <div>
           <p className="text-xs text-slate-400 mb-1">
-            Course: {lesson.course?.title}
+            Course: {lesson.course?.title || "Untitled Course"}
           </p>
           <h1 className="text-2xl font-bold mb-2">{lesson.title}</h1>
+
           {lesson.description && (
-            <p className="text-sm text-slate-300 mb-3">
-              {lesson.description}
-            </p>
+            <p className="text-sm text-slate-300 mb-3">{lesson.description}</p>
           )}
         </div>
 
-        {lesson.videoUrl && (
+        {/* Video section */}
+        {lesson.videoUrl ? (
           <div className="aspect-video bg-black rounded-xl overflow-hidden mb-4">
             <iframe
               src={lesson.videoUrl}
@@ -97,8 +110,13 @@ function LessonViewer() {
               allowFullScreen
             />
           </div>
+        ) : (
+          <p className="text-sm text-slate-400 italic">
+            No video available for this lesson.
+          </p>
         )}
 
+        {/* Text content */}
         {lesson.content && (
           <div className="bg-slate-800 rounded-xl p-4 text-sm text-slate-100 whitespace-pre-wrap">
             {lesson.content}

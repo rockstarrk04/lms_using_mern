@@ -1,25 +1,30 @@
+// src/CourseDetails.jsx
 import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { API_BASE_URL } from "./api/client";
 import { AuthContext } from "./context/AuthContext";
 
 function CourseDetails() {
-  const { id } = useParams(); // course id from URL
+  const { id } = useParams(); // course id from route
   const navigate = useNavigate();
   const { user, token } = useContext(AuthContext);
 
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [enrolling, setEnrolling] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(true);
+
         const [courseRes, lessonsRes] = await Promise.all([
           fetch(`${API_BASE_URL}/courses/${id}`),
-          fetch(`${API_BASE_URL}/courses/${id}/lessons`),
+          fetch(`${API_BASE_URL}/courses/${id}/lessons`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
 
         const courseData = await courseRes.json();
@@ -34,6 +39,23 @@ function CourseDetails() {
         if (lessonsRes.ok) {
           setLessons(lessonsData.lessons || []);
         }
+
+        // ⭐ Enrollment check only for students
+        if (user && user.role === "student") {
+          const enrollmentRes = await fetch(
+            `${API_BASE_URL}/enrollments/check/${id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (enrollmentRes.ok) {
+            const enrollmentData = await enrollmentRes.json();
+            setIsEnrolled(enrollmentData.isEnrolled);
+          }
+        }
       } catch (err) {
         setError("Something went wrong loading the course");
       } finally {
@@ -42,22 +64,18 @@ function CourseDetails() {
     };
 
     loadData();
-  }, [id]);
+  }, [id, user, token]);
 
   const handleEnroll = async () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
+    if (!user) return navigate("/login");
 
     if (user.role !== "student") {
-      alert("Only students can enroll in courses.");
+      alert("Only students can enroll in this course.");
       return;
     }
 
-    setEnrolling(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/courses/${id}/enroll`, {
+      const res = await fetch(`${API_BASE_URL}/enrollments/${id}/enroll`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -67,16 +85,17 @@ function CourseDetails() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Failed to enroll");
+        alert(data.message || "Enrollment failed");
       } else {
         alert("Enrolled successfully!");
+        setIsEnrolled(true);
       }
     } catch (err) {
-      alert("Something went wrong while enrolling");
-    } finally {
-      setEnrolling(false);
+      alert("Enrollment error: " + err.message);
     }
   };
+
+  // ---------------- RENDERING ----------------
 
   if (loading) {
     return (
@@ -90,10 +109,7 @@ function CourseDetails() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
         <p className="mb-3">{error || "Course not found"}</p>
-        <Link
-          to="/courses"
-          className="text-sm text-blue-400 hover:underline"
-        >
+        <Link to="/courses" className="text-sm text-blue-400 hover:underline">
           Back to courses
         </Link>
       </div>
@@ -103,6 +119,7 @@ function CourseDetails() {
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <div className="max-w-4xl mx-auto py-8 px-4">
+        {/* Header */}
         <div className="mb-6">
           <button
             onClick={() => navigate(-1)}
@@ -110,32 +127,57 @@ function CourseDetails() {
           >
             ← Back
           </button>
+
           <h1 className="text-2xl font-bold mb-2">{course.title}</h1>
           <p className="text-sm text-slate-300 mb-2">{course.description}</p>
+
           <p className="text-xs text-slate-400 mb-1">
             Category: {course.category || "General"} • Level: {course.level}
           </p>
+
           {course.instructor && (
             <p className="text-xs text-slate-400">
               Instructor: {course.instructor.name}
             </p>
           )}
 
+          {/* ENROLLMENT BUTTONS */}
           <div className="mt-4 flex gap-3">
-            {user && user.role === "student" && (
+            {user && user.role === "student" && !isEnrolled && (
               <button
                 onClick={handleEnroll}
-                disabled={enrolling}
-                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-medium disabled:opacity-60"
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-medium"
               >
-                {enrolling ? "Enrolling..." : "Enroll in course"}
+                Enroll in course
               </button>
             )}
+
+            {user && user.role === "student" && isEnrolled && (
+              <span className="px-4 py-2 rounded-lg bg-emerald-600 text-xs font-medium">
+                Enrolled
+              </span>
+            )}
+
+            {/* Instructor edit / manage button */}
+            {user &&
+              user.role === "instructor" &&
+              user._id === course.instructor?._id && (
+                <button
+                  onClick={() =>
+                    navigate(`/instructor/courses/${course._id}`)
+                  }
+                  className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-xs font-medium"
+                >
+                  Manage Course
+                </button>
+              )}
           </div>
         </div>
 
+        {/* Lessons */}
         <div className="bg-slate-800 rounded-xl p-4">
           <h2 className="text-lg font-semibold mb-3">Lessons</h2>
+
           {lessons.length === 0 ? (
             <p className="text-sm text-slate-400">No lessons added yet.</p>
           ) : (
@@ -149,20 +191,20 @@ function CourseDetails() {
                     {lesson.order ? `${lesson.order}. ` : ""}
                     {lesson.title}
                   </p>
+
                   {lesson.description && (
                     <p className="text-xs text-slate-400 mb-1">
                       {lesson.description}
                     </p>
                   )}
-                  {lesson.videoUrl && (
-                    <a
-                      href={lesson.videoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-blue-400 hover:underline"
+
+                  {isEnrolled && (
+                    <Link
+                      to={`/courses/${course._id}/lessons/${lesson._id}`}
+                      className="text-xs text-blue-400 hover:underline mt-1 block"
                     >
-                      Watch video
-                    </a>
+                      Start Lesson
+                    </Link>
                   )}
                 </li>
               ))}

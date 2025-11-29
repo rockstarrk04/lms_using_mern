@@ -1,9 +1,10 @@
 // backend/src/controllers/lessonController.js
-const Lesson = require("../models/Lesson");
-const Course = require("../models/Course");
+import Lesson from "../models/Lesson.js";
+import Course from "../models/Course.js";
+import Enrollment from "../models/Enrollment.js";
 
 // GET /api/courses/:courseId/lessons
-const getLessonsForCourse = async (req, res) => {
+export const getLessonsForCourse = async (req, res) => {
   try {
     const { courseId } = req.params;
 
@@ -18,7 +19,7 @@ const getLessonsForCourse = async (req, res) => {
 };
 
 // POST /api/courses/:courseId/lessons  (instructor/admin only)
-const createLessonForCourse = async (req, res) => {
+export const createLessonForCourse = async (req, res) => {
   try {
     const { courseId } = req.params;
     const { title, description, content, videoUrl, order } = req.body || {};
@@ -63,22 +64,39 @@ const createLessonForCourse = async (req, res) => {
 };
 
 // GET /api/lessons/:id
-const getLessonById = async (req, res) => {
+export const getLessonById = async (req, res) => {
   try {
     const lesson = await Lesson.findById(req.params.id).populate(
       "course",
       "title instructor"
     );
-    if (!lesson) return res.status(404).json({ message: "Lesson not found" });
+
+    if (!lesson) {
+      return res.status(404).json({ message: "Lesson not found" });
+    }
+
+    // --- SECURITY CHECK ---
+    // Allow access if:
+    // 1. User is an admin
+    // 2. User is the instructor of the course
+    // 3. User is enrolled in the course
+    const isEnrolled = await Enrollment.findOne({
+      student: req.user._id,
+      course: lesson.course._id,
+    });
+
+    const isInstructor = lesson.course.instructor?.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isEnrolled && !isInstructor && !isAdmin) {
+      return res.status(403).json({
+        message: "You are not authorized to view this lesson",
+      });
+    }
+
     return res.json({ lesson });
   } catch (error) {
     console.error("getLessonById error:", error);
     return res.status(500).json({ message: "Server error" });
   }
-};
-
-module.exports = {
-  getLessonsForCourse,
-  createLessonForCourse,
-  getLessonById, // Export getLessonById
 };

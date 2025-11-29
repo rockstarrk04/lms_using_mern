@@ -1,26 +1,21 @@
 // backend/src/controllers/courseController.js
 
-const Course = require("../models/Course");
-const Enrollment = require("../models/Enrollment");
+import Course from "../models/Course.js";
+import Enrollment from "../models/Enrollment.js";
 
 // GET /api/courses  -> list all approved courses
-const getCourses = async (req, res) => {
+export const getCourses = async (req, res) => {
   try {
     const { search, category, level } = req.query;
 
-    const query = { isApproved: true };
+    const query = { isApproved: true, isDeleted: { $ne: true } };
 
     if (search) {
       query.title = { $regex: search, $options: "i" };
     }
 
-    if (category) {
-      query.category = category;
-    }
-
-    if (level) {
-      query.level = level;
-    }
+    if (category) query.category = category;
+    if (level) query.level = level;
 
     const courses = await Course.find(query)
       .populate("instructor", "name email")
@@ -33,12 +28,13 @@ const getCourses = async (req, res) => {
   }
 };
 
-// GET /api/courses/mine  -> courses created by logged-in instructor/admin
-const getMyCourses = async (req, res) => {
+// GET /api/courses/mine
+export const getMyCourses = async (req, res) => {
   try {
-    const filter = { instructor: req.user._id };
-
-    const courses = await Course.find(filter).sort({ createdAt: -1 });
+    const courses = await Course.find({
+      instructor: req.user._id,
+      isDeleted: { $ne: true },
+    }).sort({ createdAt: -1 });
 
     return res.json({ courses });
   } catch (error) {
@@ -48,14 +44,16 @@ const getMyCourses = async (req, res) => {
 };
 
 // GET /api/courses/:id
-const getCourseById = async (req, res) => {
+export const getCourseById = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id).populate(
-      "instructor",
-      "name email"
+    const course = await Course.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).populate(
+      "instructor", "name email"
     );
 
-    if (!course || !course.isApproved) {
+    // Allow admin to see any course, others can only see approved ones
+    const isAdmin = req.user?.role === 'admin';
+
+    if (!course || (!course.isApproved && !isAdmin)) {
       return res.status(404).json({ message: "Course not found" });
     }
 
@@ -66,11 +64,25 @@ const getCourseById = async (req, res) => {
   }
 };
 
-// POST /api/courses  -> create new course (instructor/admin only)
-const createCourse = async (req, res) => {
+// POST /api/courses
+export const createCourse = async (req, res) => {
   try {
-    const { title, description, category, level, language, thumbnailUrl, price } =
-      req.body || {};
+    // Only instructors/admins
+    if (!["admin", "instructor"].includes(req.user.role)) {
+      return res.status(403).json({
+        message: "Only instructors and admins can create courses",
+      });
+    }
+
+    const {
+      title,
+      description,
+      category,
+      level,
+      language,
+      thumbnailUrl,
+      price,
+    } = req.body || {};
 
     if (!title || !description) {
       return res
@@ -87,7 +99,6 @@ const createCourse = async (req, res) => {
       thumbnailUrl,
       price,
       instructor: req.user._id,
-      // isApproved: false  // if later you add admin approval
     });
 
     return res.status(201).json({
@@ -99,53 +110,46 @@ const createCourse = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-// DELETE COURSE
-const deleteCourse = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.id);
-
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-
-    // Delete all enrollments associated with this course
-    await Enrollment.deleteMany({ course: req.params.id });
-
-    await course.deleteOne();
-
-    return res.json({ message: "Course deleted successfully" });
-  } catch (error) {
-    console.error("Delete course error:", error);
-    return res.status(500).json({ message: "Server error" });
-  }
-};
 
 // UPDATE COURSE
-const updateCourse = async (req, res) => {
+export const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, category, level, language, thumbnailUrl, price, isApproved } = req.body;
+    const {
+      title,
+      description,
+      category,
+      level,
+      language,
+      thumbnailUrl,
+      price,
+      isApproved,
+    } = req.body;
 
-    const course = await Course.findById(id);
+    const course = await Course.findOne({ _id: id, isDeleted: { $ne: true } });
 
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    // Only allow instructor or admin to update their own course
-    if (req.user.role !== "admin" && course.instructor.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "You are not authorized to update this course" });
+    // Only admin or owner
+    if (
+      req.user.role !== "admin" &&
+      course.instructor.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message: "You are not authorized to update this course",
+      });
     }
 
-    course.title = title || course.title;
-    course.description = description || course.description;
-    course.category = category || course.category;
-    course.level = level || course.level;
-    course.language = language || course.language;
-    course.thumbnailUrl = thumbnailUrl || course.thumbnailUrl;
-    course.price = price !== undefined ? price : course.price;
+    if (title) course.title = title;
+    if (description) course.description = description;
+    if (category) course.category = category;
+    if (level) course.level = level;
+    if (language) course.language = language;
+    if (thumbnailUrl) course.thumbnailUrl = thumbnailUrl;
+    if (price !== undefined) course.price = price;
 
-    // Admin can approve/unapprove courses
     if (req.user.role === "admin" && isApproved !== undefined) {
       course.isApproved = isApproved;
     }
@@ -162,11 +166,35 @@ const updateCourse = async (req, res) => {
   }
 };
 
-module.exports = {
-  getCourses,
-  getCourseById,
-  createCourse,
-  getMyCourses,
-  updateCourse,
-  deleteCourse,
+// DELETE COURSE (Instructor + Admin)
+export const deleteCourse = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const course = await Course.findOne({ _id: id, isDeleted: { $ne: true } });
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Allow only: admin OR the instructor who created it
+    if (
+      req.user.role !== "admin" &&
+      course.instructor.toString() !== req.user._id.toString()
+    ) {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to delete this course" });
+    }
+
+    // Delete all enrollments for that course
+    // await Enrollment.deleteMany({ course: id }); // With soft delete, you might not want to delete enrollments
+
+    course.isDeleted = true;
+    await course.save();
+
+    return res.json({ message: "Course deleted successfully" });
+  } catch (error) {
+    console.error("deleteCourse error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
