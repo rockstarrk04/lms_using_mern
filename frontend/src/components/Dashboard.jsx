@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { API_BASE_URL } from "../api/client";
+import { useApi } from "../hooks/useApi";
 
 // A small sub-component for stat cards
 const StatCard = ({ name, value }) => (
@@ -40,54 +40,20 @@ const RecentCourseItem = ({ course }) => (
 
 function Dashboard() {
   const { user, token } = useContext(AuthContext);
-  const [stats, setStats] = useState([]);
-  const [recentCourses, setRecentCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: enrolledCoursesData, isLoading } = useApi("/enrollments/me", token);
+  const enrolledCourses = enrolledCoursesData?.courses || [];
 
-  useEffect(() => {
-    if (!user) return;
+  const recentCourses = enrolledCourses.slice(0, 3);
+  const stats = [
+    { name: "Courses Enrolled", value: enrolledCourses.length },
+    { name: "Courses Completed", value: "0" }, // Placeholder
+    { name: "Certificates Earned", value: "0" }, // Placeholder
+  ];
 
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        // This endpoint should return the courses the user is enrolled in.
-        const response = await fetch(`${API_BASE_URL}/enrollments/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) throw new Error("Failed to fetch dashboard data.");
-
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error("Received non-JSON response from server for dashboard.");
-        }
-
-        const data = await response.json();
-        const enrolledCourses = data.courses || [];
-
-        // Set recent courses (you can add more logic here, e.g., sort by last accessed)
-        setRecentCourses(enrolledCourses.slice(0, 3));
-
-        // Set stats
-        setStats([
-          { name: "Courses Enrolled", value: enrolledCourses.length },
-          { name: "Courses Completed", value: "0" }, // Placeholder
-          { name: "Certificates Earned", value: "0" }, // Placeholder
-        ]);
-
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [user, token]);
-
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-20 text-white">Loading Dashboard...</div>;
   }
-
+  
   if (!user) return null;
 
   return (

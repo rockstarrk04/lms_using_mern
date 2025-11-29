@@ -1,50 +1,15 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { API_BASE_URL } from "../api/client";
+import { useApi } from "../hooks/useApi";
 import CourseCard from "./CourseCard"; // Reusing our existing component
 
 function MyCourses() {
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const { token } = useContext(AuthContext);
+  const { data: coursesData, isLoading, isError } = useApi("/enrollments/me", token);
+  const courses = coursesData?.courses || [];
 
-  useEffect(() => {
-    const fetchMyCourses = async () => {
-      if (!token) return;
-
-      try {
-        setLoading(true);
-        // This endpoint should return the courses the user is enrolled in.
-        const response = await fetch(`${API_BASE_URL}/enrollments/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch your courses. Please try again later.");
-        }
-
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error("Received non-JSON response from server.");
-        }
-
-        const data = await response.json();
-        setCourses(data.courses || []); // Ensure courses is always an array
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMyCourses();
-  }, [token]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-4rem)] w-full items-center justify-center">
         <svg className="mr-3 h-10 w-10 animate-spin text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -67,9 +32,9 @@ function MyCourses() {
         </p>
       </header>
 
-      {error && <p className="text-center text-red-400">{error}</p>}
+      {isError && <p className="text-center text-red-400">{isError.info?.message || "Failed to fetch your courses. Please try again later."}</p>}
 
-      {!loading && !error && courses.length === 0 ? (
+      {!isLoading && !isError && courses.length === 0 ? (
         <div className="text-center rounded-lg border-2 border-dashed border-slate-700 p-12">
           <h3 className="text-xl font-medium text-white">No Courses Yet</h3>
           <p className="mt-2 text-slate-400">You haven't enrolled in any courses. Let's change that!</p>

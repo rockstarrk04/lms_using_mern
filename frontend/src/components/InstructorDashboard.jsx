@@ -1,42 +1,15 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { API_BASE_URL } from "../api/client";
+import { useApi } from "../hooks/useApi";
 import { toast } from "react-hot-toast";
 
 function InstructorDashboard() {
-  const [myCourses, setMyCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
   const { token } = useContext(AuthContext);
+  const { data: myCoursesData, isLoading } = useApi("/courses/my-creations", token);
+  const myCourses = myCoursesData?.courses || [];
 
-  useEffect(() => {
-    const fetchMyCourses = async () => {
-      if (!token) return;
-      try {
-        setLoading(true);
-        // This endpoint should return courses created by the logged-in instructor
-        const response = await fetch(`${API_BASE_URL}/courses/my-creations`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) throw new Error("Failed to fetch your courses.");
-
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error("Received non-JSON response from server.");
-        }
-
-        const data = await response.json();
-        setMyCourses(data.courses || []);
-      } catch (err) {
-        toast.error(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMyCourses();
-  }, [token]);
-
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-20 text-white">Loading Instructor Dashboard...</div>;
   }
 

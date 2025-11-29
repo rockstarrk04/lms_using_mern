@@ -1,70 +1,28 @@
 // src/CourseDetails.jsx
-import { useEffect, useState, useContext } from "react";
+import { useContext } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { API_BASE_URL } from "./api/client";
 import { AuthContext } from "./context/AuthContext";
+import { useApi } from "./hooks/useApi";
+import { API_BASE_URL } from "./api/client";
 
 function CourseDetails() {
   const { id } = useParams(); // course id from route
   const navigate = useNavigate();
   const { user, token } = useContext(AuthContext);
 
-  const [course, setCourse] = useState(null);
-  const [lessons, setLessons] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [isEnrolled, setIsEnrolled] = useState(false);
-  const [error, setError] = useState("");
+  const { data: courseData, isLoading: courseLoading, isError: courseError } = useApi(`/courses/${id}`);
+  const { data: lessonsData, isLoading: lessonsLoading, isError: lessonsError } = useApi(`/courses/${id}/lessons`, token);
+  const { data: enrollmentData, isLoading: enrollmentLoading, isError: enrollmentError, mutate: mutateEnrollment } = useApi(`/enrollments/check/${id}`, token, {
+    shouldRetryOnError: false,
+  });
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
+  const course = courseData?.course;
+  const lessons = lessonsData?.lessons || [];
+  const isEnrolled = enrollmentData?.isEnrolled;
 
-        const [courseRes, lessonsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/courses/${id}`),
-          fetch(`${API_BASE_URL}/courses/${id}/lessons`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+  const loading = courseLoading || lessonsLoading || enrollmentLoading;
+  const error = courseError || lessonsError || enrollmentError;
 
-        const courseData = await courseRes.json();
-        const lessonsData = await lessonsRes.json();
-
-        if (!courseRes.ok) {
-          setError(courseData.message || "Failed to load course");
-        } else {
-          setCourse(courseData.course);
-        }
-
-        if (lessonsRes.ok) {
-          setLessons(lessonsData.lessons || []);
-        }
-
-        // ⭐ Enrollment check only for students
-        if (user && user.role === "student") {
-          const enrollmentRes = await fetch(
-            `${API_BASE_URL}/enrollments/check/${id}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (enrollmentRes.ok) {
-            const enrollmentData = await enrollmentRes.json();
-            setIsEnrolled(enrollmentData.isEnrolled);
-          }
-        }
-      } catch (err) {
-        setError("Something went wrong loading the course");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [id, user, token]);
 
   const handleEnroll = async () => {
     if (!user) return navigate("/login");
@@ -88,7 +46,7 @@ function CourseDetails() {
         alert(data.message || "Enrollment failed");
       } else {
         alert("Enrolled successfully!");
-        setIsEnrolled(true);
+        mutateEnrollment();
       }
     } catch (err) {
       alert("Enrollment error: " + err.message);

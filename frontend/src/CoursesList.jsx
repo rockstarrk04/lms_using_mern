@@ -1,40 +1,16 @@
-// src/CoursesList.jsx
-import { useEffect, useState, useContext } from "react";
+import { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { API_BASE_URL } from "./api/client";
 import { AuthContext } from "./context/AuthContext";
+import { useApi } from "./hooks/useApi";
 
 function CoursesList() {
   const { user, token } = useContext(AuthContext);
+  const { data: coursesData, isLoading, isError, mutate } = useApi("/courses", token);
+  const courses = coursesData?.courses || [];
 
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
-  const [error, setError] = useState("");
 
-  // ============================
-  // Load all courses
-  // ============================
-  useEffect(() => {
-    const loadCourses = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/courses`);
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.message || "Failed to load courses");
-        } else {
-          setCourses(data.courses || []);
-        }
-      } catch (err) {
-        setError("An error occurred while loading courses");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCourses();
-  }, []);
 
   // ============================
   // Enroll handler
@@ -62,7 +38,8 @@ function CoursesList() {
         alert(data.message || "Failed to enroll");
       } else {
         alert("Enrolled successfully!");
-
+        // Re-fetch the courses list
+        mutate();
         // Update UI instantly
         setEnrolledCourses((prev) => [...prev, courseId]);
       }
@@ -75,7 +52,7 @@ function CoursesList() {
   // ============================
   // Loading State
   // ============================
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
         <p>Loading courses...</p>
@@ -86,10 +63,10 @@ function CoursesList() {
   // ============================
   // Error State
   // ============================
-  if (error) {
+  if (isError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-        <p>{error}</p>
+        <p>{isError.info?.message || "An error occurred while loading courses"}</p>
       </div>
     );
   }
