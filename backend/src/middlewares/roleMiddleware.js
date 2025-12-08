@@ -2,7 +2,7 @@
 
 export function allowRoles(...allowedRoles) {
   return (req, res, next) => {
-    if (!req.user) {
+    if (req.user == null) { // Use == null to check for both null and undefined
       return res.status(401).json({ message: "Not authorized" });
     }
 
