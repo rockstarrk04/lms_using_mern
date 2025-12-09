@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../api/client";
 import { AuthContext } from "../context/AuthContext";
+import { getThumbnailUrl } from "./getThumbnailUrl";
 
 // --- SVG Icons ---
 const CheckCircleIcon = (props) => (
@@ -147,6 +148,59 @@ function CourseDetail() {
       </div>
     );
   }
+
+  const thumbnailUrl = getThumbnailUrl(course, '500x281');
+
+  // Mock data for "What you'll learn" section based on course title
+  const getLearningPoints = (courseTitle) => {
+    const lowerCaseTitle = courseTitle.toLowerCase();
+    const points = {
+      "python": [
+        "Master Python fundamentals from scratch.",
+        "Build real-world applications and scripts.",
+        "Understand object-oriented programming concepts.",
+        "Work with data structures like lists and dictionaries.",
+        "Automate tasks with Python.",
+        "Learn to use popular Python libraries."
+      ],
+      "web development bootcamp": [
+        "Build responsive websites with HTML5 and CSS3.",
+        "Master JavaScript, from basics to advanced concepts.",
+        "Learn modern frontend frameworks like React.",
+        "Develop backend services with Node.js and Express.",
+        "Work with databases like MongoDB.",
+        "Deploy full-stack web applications."
+      ],
+      "data science fundamentals": [
+        "Understand the core concepts of data science.",
+        "Perform data analysis and visualization with Python.",
+        "Use libraries like Pandas, NumPy, and Matplotlib.",
+        "Learn the basics of machine learning.",
+        "Clean and preprocess complex datasets.",
+        "Communicate findings through data storytelling."
+      ],
+      "sql & database management": [
+        "Write complex SQL queries to retrieve data.",
+        "Design and manage relational databases.",
+        "Understand database normalization and JOINs.",
+        "Perform data manipulation (INSERT, UPDATE, DELETE).",
+        "Learn about indexes and performance optimization."
+      ],
+      "ai & machine learning basics": [
+        "Grasp the fundamental concepts of AI and ML.",
+        "Understand different types of machine learning algorithms.",
+        "Build your first machine learning models with Scikit-learn.",
+        "Learn about neural networks and deep learning.",
+        "Evaluate the performance of your models."
+      ]
+    };
+
+    const key = Object.keys(points).find(k => lowerCaseTitle.includes(k));
+    return key ? points[key] : (course.whatYouWillLearn || []);
+  };
+
+  const whatYouWillLearn = getLearningPoints(course.title);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
@@ -176,7 +230,7 @@ function CourseDetail() {
           <div className="mt-12 rounded-xl border border-slate-700/50 bg-slate-800/60 p-8">
             <h2 className="text-2xl font-bold text-white">What you'll learn</h2>
             <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {course.whatYouWillLearn.map((item, index) => (
+              {whatYouWillLearn.map((item, index) => (
                 <li key={index} className="flex items-start">
                   <CheckCircleIcon className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-blue-500" />
                   <span className="text-slate-300">{item}</span>
@@ -202,12 +256,12 @@ function CourseDetail() {
             <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800">
               <img
                 className="h-56 w-full object-cover"
-                src={course.thumbnail}
+                src={thumbnailUrl}
                 alt={`Thumbnail for ${course.title}`}
               />
               <div className="p-6">
                 <p className="text-3xl font-bold text-white">
-                  ${course.price}
+                  $ 100
                 </p>
                 <button
                   onClick={handleEnrollment}

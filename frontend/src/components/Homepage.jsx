@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { API_BASE_URL } from "../api/client";
+import CourseCard from "./CourseCard";
 
 // --- SVG Icons for Features Section ---
+// (SVG Icon components remain the same)
 const BookOpenIcon = (props) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
@@ -23,27 +26,41 @@ const AcademicCapIcon = (props) => (
 );
 
 function Homepage() {
+  const [featuredCourses, setFeaturedCourses] = useState([]);
+
+  useEffect(() => {
+    const fetchFeaturedCourses = async () => {
+      try {
+        // Fetch all published courses and take the first 3 as "featured"
+        const response = await fetch(`${API_BASE_URL}/courses`);
+        if (!response.ok) throw new Error("Failed to fetch courses.");
+        const data = await response.json();
+        setFeaturedCourses((data.courses || []).slice(0, 3));
+      } catch (err) {
+        console.error("Error fetching featured courses:", err);
+      }
+    };
+    fetchFeaturedCourses();
+  }, []);
+
   return (
     <div className="text-white">
       {/* Hero Section */}
-      <div className="relative isolate overflow-hidden bg-slate-900">
+      <div className="relative isolate overflow-hidden bg-slate-900 pt-14">
         {/* Decorative gradient */}
-        <div className="absolute inset-x-0 top-0 -z-10 transform-gpu overflow-hidden blur-3xl" aria-hidden="true">
-          <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#0ea5e9] to-[#3b82f6] opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} />
+        <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80" aria-hidden="true">
+          <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#0ea5e9] to-[#3b82f6] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} />
         </div>
-        <div className="mx-auto max-w-7xl px-6 pb-24 pt-10 sm:pb-32 lg:flex lg:px-8 lg:py-40">
-          <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl lg:flex-shrink-0 lg:pt-8">
-            <h1 className="mt-10 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+        <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8 lg:py-40">
+          <div className="mx-auto max-w-3xl text-center">
+            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
               Unlock Your Potential, One Course at a Time.
             </h1>
             <p className="mt-6 text-lg leading-8 text-slate-300 animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
               Welcome to our Learning Management System. Discover a world of knowledge with our expert-led courses designed to help you grow personally and professionally.
             </p>
             <div className="mt-10 flex items-center gap-x-6 animate-fadeInUp" style={{ animationDelay: '0.6s' }}>
-              <Link
-                to="/courses"
-                className="rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-              >
+              <Link to="/courses" className="rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
                 Explore Courses
               </Link>
               <Link to="/register" className="text-sm font-semibold leading-6 text-white transition-transform hover:translate-x-1">
@@ -51,25 +68,32 @@ function Homepage() {
               </Link>
             </div>
           </div>
-          <div className="mx-auto mt-16 flex max-w-2xl sm:mt-24 lg:ml-10 lg:mt-0 lg:mr-0 lg:max-w-none lg:flex-none xl:ml-32 animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
-            <div className="max-w-3xl flex-none sm:max-w-5xl lg:max-w-none">
-              <div className="-m-2 rounded-xl bg-slate-800/5 p-2 ring-1 ring-inset ring-slate-700/10 lg:-m-4 lg:rounded-2xl lg:p-4">
-                <img
-                  src="https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=2574&auto=format&fit=crop"
-                  alt="Person learning on a laptop in a modern workspace"
-                  width={2432}
-                  height={1442}
-                  className="w-[76rem] rounded-md shadow-2xl ring-1 ring-slate-700"
-                />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
+      {/* Featured Courses Section */}
+      {featuredCourses.length > 0 && (
+        <div className="bg-slate-900/50">
+          <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24 lg:px-8">
+            <div className="mx-auto max-w-2xl lg:text-center">
+              <h2 className="text-base font-semibold leading-7 text-blue-400">Start Your Journey</h2>
+              <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Featured Courses</p>
+              <p className="mt-6 text-lg leading-8 text-slate-300">
+                Explore our most popular courses and find the perfect one to kickstart your learning adventure.
+              </p>
+            </div>
+            <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3">
+              {featuredCourses.map((course) => (
+                <CourseCard key={course._id} course={course} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Features Section */}
-      <div className="bg-slate-900 py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      <div className="bg-slate-900">
+        <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24 lg:px-8">
           <div className="mx-auto max-w-2xl lg:text-center animate-fadeInUp" style={{ animationDelay: '0.5s' }}>
             <h2 className="text-base font-semibold leading-7 text-blue-400">Learn Faster</h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Everything you need to succeed</p>
@@ -110,18 +134,22 @@ function Homepage() {
         </div>
       </div>
 
-      {/* Logo Cloud Section */}
-      <div className="bg-slate-900 py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <h2 className="text-center text-lg font-semibold leading-8 text-white">
-            Trusted by the world’s most innovative teams
-          </h2>
-          <div className="mx-auto mt-10 grid max-w-lg grid-cols-4 items-center gap-x-8 gap-y-10 sm:max-w-xl sm:grid-cols-6 sm:gap-x-10 lg:mx-0 lg:max-w-none lg:grid-cols-5">
-            <img className="col-span-2 max-h-12 w-full object-contain lg:col-span-1" src="https://tailwindui.com/img/logos/158x48/transistor-logo-white.svg" alt="Transistor" width={158} height={48} />
-            <img className="col-span-2 max-h-12 w-full object-contain lg:col-span-1" src="https://tailwindui.com/img/logos/158x48/reform-logo-white.svg" alt="Reform" width={158} height={48} />
-            <img className="col-span-2 max-h-12 w-full object-contain lg:col-span-1" src="https://tailwindui.com/img/logos/158x48/tuple-logo-white.svg" alt="Tuple" width={158} height={48} />
-            <img className="col-span-2 max-h-12 w-full object-contain sm:col-start-2 lg:col-span-1" src="https://tailwindui.com/img/logos/158x48/savvycal-logo-white.svg" alt="SavvyCal" width={158} height={48} />
-            <img className="col-span-2 col-start-2 max-h-12 w-full object-contain sm:col-start-auto lg:col-span-1" src="https://tailwindui.com/img/logos/158x48/statamic-logo-white.svg" alt="Statamic" width={158} height={48} />
+      {/* Call to Action Section */}
+      <div className="bg-slate-900 pb-16 sm:pb-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 ">
+          <div className="relative isolate overflow-hidden bg-slate-800 px-6 py-24 text-center shadow-2xl sm:rounded-3xl sm:px-16">
+            <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Ready to dive in?
+            </h2>
+            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-slate-300">
+              Join thousands of learners and start mastering new skills today. Create your account and begin your journey.
+            </p>
+            <div className="mt-10 flex items-center justify-center gap-x-6">
+              <Link to="/register" className="rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">Get Started</Link>
+            </div>
+            <div className="absolute -top-24 left-1/2 -z-10 h-[50rem] w-[50rem] -translate-x-1/2 [mask-image:radial-gradient(closest-side,white,transparent)]" aria-hidden="true">
+              <svg viewBox="0 0 1024 1024" className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 h-[64rem] w-[64rem] [mask-image:radial-gradient(closest-side,white,transparent)]"><ellipse cx="512" cy="512" fill="url(#8d958450-c69f-4251-94bc-4e091a323369)" rx="512" ry="512" /><defs><radialGradient id="8d958450-c69f-4251-94bc-4e091a323369"><stop stopColor="#3b82f6" /><stop offset="1" stopColor="#0ea5e9" /></radialGradient></defs></svg>
+            </div>
           </div>
         </div>
       </div>
