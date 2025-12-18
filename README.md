@@ -1,10 +1,3 @@
-Below is a **clean, professional, and optimized `README.md` content** that you can **directly paste into your repository**.
-It is written to impress **recruiters, interviewers, and reviewers**, while remaining clear and concise.
-
----
-
-# 🎓 LMS Using MERN Stack
-
 A **full-stack Learning Management System (LMS)** built using the **MERN stack** that enables instructors to create and manage courses, and students to enroll, learn, and track progress through a secure, role-based platform.
 
 ---
@@ -207,11 +200,6 @@ npm run dev
 * AI-based course recommendations
 
 ---
-
-## 👨‍💻 Author
-
-**Ramkumar J**
-Full-Stack Developer | MERN Stack
 📧 Contact via GitHub
 
 ---
@@ -221,13 +209,3 @@ Full-Stack Developer | MERN Stack
 Please consider giving the repository a **star ⭐** — it helps a lot!
 
 ---
-
-If you want, I can also:
-
-* Shorten this for **resume GitHub link**
-* Add **screenshots section**
-* Add **API documentation**
-* Make a **one-page recruiter README**
-* Rewrite it in **professional corporate tone**
-
-Just tell me.
